@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Shamal ERP — Customer & Invoice Management</title>
+<style>
+:root{--navy:#17243b;--blue:#2563eb;--bg:#f3f6fb;--line:#dce3ed;--muted:#667085;--green:#15966b}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);font:14px/1.45 Arial,sans-serif;color:#1d2939}
+header{background:var(--navy);color:white;padding:16px 22px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.brand{font-size:20px;font-weight:700}.brand small{display:block;font-size:11px;font-weight:400;color:#c7d2e3;letter-spacing:1px}
+header nav{display:flex;gap:8px;flex-wrap:wrap}
+button,.btn{border:0;border-radius:7px;padding:10px 14px;font-weight:600;cursor:pointer;background:#e8eef8;color:#23334d}
+button.primary{background:var(--blue);color:white}button.success{background:var(--green);color:white}button.danger{background:#fee4e2;color:#b42318}button.dark{background:#34445f;color:white}
+button:hover{filter:brightness(.96)}
+main{max-width:1200px;margin:22px auto;padding:0 16px}
+.tabs{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap}.tabs button{background:white;border:1px solid var(--line)}.tabs button.active{background:var(--blue);color:white;border-color:var(--blue)}
+.panel{background:white;border:1px solid var(--line);border-radius:12px;padding:20px;margin-bottom:18px;box-shadow:0 4px 16px #17243b0a}
+h1{font-size:22px;margin:0 0 4px}h2{font-size:17px;margin:0 0 16px}.sub{color:var(--muted);margin:0 0 18px}
+.grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+.field label{display:block;font-size:12px;color:#475467;margin:0 0 5px;font-weight:600}
+input,select,textarea{width:100%;border:1px solid #cfd8e5;border-radius:7px;padding:10px;background:white;color:#1d2939;font:inherit;min-width:0}
+input:focus,select:focus,textarea:focus{outline:2px solid #bfdbfe;border-color:var(--blue)}
+.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:16px}
+.table-wrap{overflow:auto}table{width:100%;border-collapse:collapse;min-width:650px}th,td{padding:10px;border-bottom:1px solid var(--line);text-align:left}th{background:#f7f9fc;color:#475467;font-size:12px}
+.search{max-width:320px;margin-bottom:12px}
+.invoice-top{display:flex;justify-content:space-between;gap:20px;align-items:flex-start;margin-bottom:20px}
+.company{font-size:20px;font-weight:700;color:var(--navy)}.company small{display:block;font-size:12px;color:var(--muted);font-weight:400}
+.invoice-meta{display:grid;grid-template-columns:1fr 1fr;gap:8px;max-width:430px}
+.invoice-meta div{border:1px solid var(--line);padding:8px;border-radius:6px}
+.invoice-meta b{display:block;font-size:11px;color:var(--muted)}
+.line-table input{padding:7px}.line-table td{padding:5px}
+.totals{margin:16px 0 0 auto;width:min(100%,360px)}.totalrow{display:flex;justify-content:space-between;padding:7px 10px;border-bottom:1px solid var(--line)}.totalrow.grand{font-size:18px;font-weight:700;background:#f2f6ff;border-radius:6px}
+.note{color:var(--muted);font-size:12px}.hidden{display:none!important}
+footer{text-align:center;color:var(--muted);padding:18px;font-size:12px}
+@media(max-width:760px){.grid{grid-template-columns:1fr 1fr}.invoice-top{display:block}.invoice-meta{margin-top:14px}.panel{padding:14px}}
+@media(max-width:480px){.grid{grid-template-columns:1fr}header{padding:14px}.brand{font-size:18px}}
+@media print{
+ body{background:white;color:#111;font-size:11px}header,.tabs,.no-print,footer,.screen-only{display:none!important}
+ main{max-width:none;margin:0;padding:0}.panel{border:0;box-shadow:none;padding:0;margin:0}
+ #invoicePanel{display:block!important}.invoice-top{margin-bottom:14px}
+ input,select,textarea{border:0;padding:2px;background:transparent;appearance:none}
+ .line-table input{padding:2px}button{display:none!important}
+ table{min-width:0}th,td{padding:6px;border:1px solid #bbb}
+ .totalrow{border-bottom:1px solid #bbb}.totalrow.grand{background:#eee!important}
+}
+
+#appShell{display:none}
+#loginScreen{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;background:linear-gradient(135deg,#17243b,#2563eb)}
+.login-card{background:#fff;width:min(100%,420px);padding:28px;border-radius:16px;box-shadow:0 20px 60px #0003}
+.login-card h1{margin-bottom:6px;color:#17243b}.login-card p{color:#667085}
+.login-card .field{margin:14px 0}.login-card button{width:100%;margin-top:8px}
+#authMessage{font-size:13px;margin-top:12px;color:#b42318;min-height:18px}
+#userBar{display:flex;align-items:center;gap:10px;color:#fff;font-size:12px;flex-wrap:wrap}
+#userBar button{padding:7px 10px}
+.setup-hint{font-size:12px;color:#667085;background:#f7f9fc;padding:10px;border-radius:8px;margin-top:14px}
+
+</style>
+</head>
+<body>
+<section id="loginScreen">
+ <div class="login-card">
+  <h1>SHAMAL ERP</h1>
+  <p>Sign in with your authorized shop account.</p>
+  <div class="field"><label for="loginEmail">Email address</label><input id="loginEmail" type="email" autocomplete="username" placeholder="employee@yourshop.com"></div>
+  <div class="field"><label for="loginPassword">Password</label><input id="loginPassword" type="password" autocomplete="current-password" placeholder="Enter your password"></div>
+  <button class="primary" id="loginButton" onclick="shamalSignIn()">Sign In</button>
+  <button id="resetPasswordButton" onclick="shamalResetPassword()">Forgot password?</button>
+  <div id="authMessage"></div>
+  <div class="setup-hint">This login requires your Supabase Project URL and public anon key to be configured in this HTML file. User accounts are created by the administrator in Supabase.</div>
+ </div>
+</section>
+<div id="appShell">
+<header>
+ <div class="brand">SHAMAL ERP <small>CUSTOMER & TAX INVOICE MANAGEMENT</small></div>
+ <nav><button class="dark" onclick="showTab('customers')">Customers</button><button class="dark" onclick="showTab('invoice')">Create Invoice</button><button class="dark" onclick="showTab('inventory')">Inventory</button><button class="dark" onclick="showTab('records')">Records</button></nav><div id="userBar"><span id="signedInAs"></span><button class="dark" onclick="shamalSignOut()">Sign Out</button></div>
+</header>
+<main>
+ <div class="tabs">
+  <button id="tab-customers" class="active" onclick="showTab('customers')">Customer Management</button>
+  <button id="tab-invoice" onclick="showTab('invoice')">Tax Invoice</button>
+  <button id="tab-inventory" onclick="showTab('inventory')">Inventory</button><button id="tab-records" onclick="showTab('records')">Saved Records</button>
+ </div>
+
+ <section id="customersPanel" class="panel">
+  <h1>Customer Management</h1><p class="sub">Create and manage customer accounts.</p>
+  <input type="hidden" id="customerId">
+  <div class="grid">
+   <div class="field"><label>Account Code</label><input id="accountCode" placeholder="Auto generated" readonly></div>
+   <div class="field"><label>Customer / Company Name *</label><input id="custName" placeholder="Customer name"></div>
+   <div class="field"><label>Phone Number</label><input id="custPhone" placeholder="+966 5X XXX XXXX"></div>
+   <div class="field"><label>Email</label><input id="custEmail" type="email" placeholder="name@example.com"></div>
+   <div class="field"><label>VAT Number</label><input id="custVat" placeholder="VAT registration number"></div>
+   <div class="field"><label>City</label><input id="custCity" placeholder="Hail"></div>
+   <div class="field"><label>Country</label><input id="custCountry" value="Saudi Arabia"></div>
+   <div class="field"><label>Postal Code</label><input id="custPostal" placeholder="Postal code"></div>
+   <div class="field"><label>Credit Limit (SAR)</label><input id="custCredit" type="number" min="0" value="0"></div>
+   <div class="field"><label>Address</label><input id="custAddress" placeholder="Street / district"></div>
+   <div class="field"><label>Payment Terms</label><select id="custTerms"><option>Cash</option><option>7 Days</option><option>15 Days</option><option>30 Days</option><option>60 Days</option></select></div>
+   <div class="field"><label>Rate Type</label><select id="custRate"><option>A</option><option>B</option><option>C</option><option>D</option></select></div>
+   <div class="field"><label>Customer Notes</label><input id="custNotes" placeholder="Special requests, preferences, follow-up details"></div>
+  </div>
+  <div class="actions"><button class="success" onclick="saveCustomer()">Save Customer</button><button onclick="resetCustomer()">Clear</button><button onclick="downloadCustomers()">Download Customers CSV</button></div>
+  <hr style="border:0;border-top:1px solid var(--line);margin:20px 0">
+  <h2>Customer List</h2><input class="search" id="customerSearch" placeholder="Search customer..." oninput="renderCustomers()">
+  <div class="table-wrap"><table><thead><tr><th>Account</th><th>Name</th><th>Phone</th><th>City</th><th>VAT No.</th><th>Actions</th></tr></thead><tbody id="customerRows"></tbody></table></div>
+ </section>
+
+ <section id="invoicePanel" class="panel hidden">
+  <div class="no-print"><h1>Create Tax Invoice</h1><p class="sub">Saudi VAT invoice template — VAT is calculated at 15% by default.</p></div>
+  <div class="invoice-top">
+   <div><div class="company" id="sellerName">Your Business Name<small>Business address · Saudi Arabia</small></div>
+    <div style="margin-top:10px;font-size:12px">VAT No: <input id="sellerVat" style="display:inline-block;width:190px" placeholder="Your VAT number"></div>
+    <div style="font-size:12px">Phone: <input id="sellerPhone" style="display:inline-block;width:190px" placeholder="Business phone"></div>
+   </div>
+   <div class="invoice-meta">
+    <div><b>INVOICE NUMBER</b><input id="invoiceNo" value="INV-0001"></div>
+    <div><b>INVOICE DATE</b><input id="invoiceDate" type="date"></div>
+    <div><b>SUPPLY DATE</b><input id="supplyDate" type="date"></div>
+    <div><b>CURRENCY</b><select id="currency"><option value="SAR">SAR</option></select></div>
+   </div>
+  </div>
+  <div class="grid" style="grid-template-columns:repeat(2,minmax(0,1fr));margin-bottom:18px">
+   <div class="field"><label>Seller / Business Name</label><input id="businessName" value="Your Business Name" oninput="document.getElementById('sellerName').childNodes[0].textContent=this.value"></div>
+   <div class="field"><label>Buyer / Customer</label><select id="invoiceCustomer" onchange="fillBuyer()"><option value="">Select customer</option></select></div>
+   <div class="field"><label>Buyer VAT Number</label><input id="buyerVat" placeholder="Buyer VAT number"></div>
+   <div class="field"><label>Buyer Address</label><input id="buyerAddress" placeholder="Buyer address"></div>
+  </div>
+  <h2>Invoice Items</h2>
+  <div class="table-wrap"><table class="line-table"><thead><tr><th style="width:34px">#</th><th>Description</th><th style="width:90px">Unit</th><th style="width:120px">Unit Price</th><th style="width:90px">Qty</th><th style="width:120px">Amount</th><th class="no-print"> </th></tr></thead><tbody id="itemRows"></tbody></table></div>
+  <div class="actions no-print"><button onclick="addItem()">+ Add Item</button></div>
+  <div class="totals">
+   <div class="totalrow"><span>Subtotal (Excl. VAT)</span><b id="subtotal">0.00 SAR</b></div>
+   <div class="totalrow"><span>VAT (15%)</span><b id="vatAmount">0.00 SAR</b></div>
+   <div class="totalrow grand"><span>Total Including VAT</span><b id="grandTotal">0.00 SAR</b></div>
+  </div>
+  <div class="field" style="margin-top:18px"><label>Notes / Terms</label><textarea id="invoiceNotes" rows="2" placeholder="Thank you for your business."></textarea></div>
+  <div class="actions no-print">
+   <button class="success" onclick="saveInvoice()">Save Invoice</button>
+   <button class="primary" onclick="window.print()">Print / Save PDF</button>
+   <button onclick="downloadInvoiceHTML()">Download Invoice</button>
+   <button onclick="newInvoice()">New Invoice</button>
+  </div>
+  <p class="note no-print">To create a PDF: choose “Print / Save PDF”, then select “Save as PDF” in your browser's print window.</p>
+ </section>
+
+
+ <section id="inventoryPanel" class="panel hidden">
+  <h1>Product & Inventory Management</h1><p class="sub">Manage decoration products, prices, VAT, barcodes and stock movements.</p>
+  <div class="grid" style="margin-bottom:18px">
+   <div class="field"><label>Total Products</label><input id="invTotalProducts" readonly value="0"></div>
+   <div class="field"><label>Units In Stock</label><input id="invUnitsStock" readonly value="0"></div>
+   <div class="field"><label>Low Stock Items</label><input id="invLowStock" readonly value="0"></div>
+  </div>
+  <h2 id="productFormTitle">Add Product</h2><input type="hidden" id="productId">
+  <div class="grid">
+   <div class="field"><label>Product Code *</label><input id="productCode" placeholder="e.g. WP-0001"></div>
+   <div class="field"><label>Product Name *</label><input id="productName" placeholder="3D Wallpaper"></div>
+   <div class="field"><label>Category</label><select id="productCategory"><option>Wallpaper & Wall Covering</option><option>Curtains & Blinds</option><option>Lighting</option><option>Flooring & Tiles</option><option>Paint & Finishing</option><option>Furniture & Accessories</option><option>Ceiling</option><option>Woodwork</option><option>Hardware</option><option>Adhesives</option><option>Glass & Mirrors</option><option>Bathroom Accessories</option><option>Other</option></select></div>
+   <div class="field"><label>Unit</label><select id="productUnit"><option>PC</option><option>Piece</option><option>Roll</option><option>Box</option><option>Meter</option><option>Square Meter (m²)</option><option>Set</option><option>Carton</option><option>KG</option><option>Liter</option></select></div>
+   <div class="field"><label>Purchase Price (SAR)</label><input id="productCost" type="number" min="0" step=".01" value="0"></div>
+   <div class="field"><label>Selling Price (SAR, excl. VAT)</label><input id="productPrice" type="number" min="0" step=".01" value="0"></div>
+   <div class="field"><label>Opening Stock Quantity</label><input id="productStock" type="number" min="0" step=".01" value="0"></div>
+   <div class="field"><label>Low Stock Alert At</label><input id="productMinStock" type="number" min="0" step=".01" value="5"></div>
+   <div class="field"><label>VAT Rate</label><select id="productVat"><option value="15">15% Standard VAT</option><option value="0">0% VAT</option></select></div>
+   <div class="field"><label>Supplier</label><input id="productSupplier" placeholder="Supplier name"></div>
+   <div class="field"><label>Barcode</label><input id="productBarcode" placeholder="Scan or enter barcode"></div>
+   <div class="field"><label>Product Notes</label><input id="productNotes" placeholder="Color, size, material, etc."></div>
+  </div>
+  <div class="actions"><button class="success" onclick="saveProduct()">Save Product</button><button onclick="resetProduct()">Clear Form</button><button onclick="downloadProducts()">Download Product CSV</button></div>
+  <hr style="border:0;border-top:1px solid var(--line);margin:20px 0">
+  <h2>Stock Movement / Purchase / Sale</h2>
+  <div class="grid">
+   <div class="field"><label>Product</label><select id="movementProduct"></select></div>
+   <div class="field"><label>Movement Type</label><select id="movementType"><option value="purchase">Purchase / Stock In</option><option value="sale">Sale / Stock Out</option><option value="adjustment">Stock Adjustment</option></select></div>
+   <div class="field"><label>Quantity</label><input id="movementQty" type="number" min="0.01" step=".01" value="1"></div>
+   <div class="field"><label>Reference / Invoice No.</label><input id="movementRef" placeholder="PO-0001 or INV-0001"></div>
+   <div class="field"><label>Movement Date</label><input id="movementDate" type="date"></div>
+   <div class="field"><label>Notes</label><input id="movementNotes" placeholder="Optional notes"></div>
+  </div>
+  <div class="actions"><button class="primary" onclick="recordMovement()">Record Stock Movement</button><button onclick="downloadMovements()">Download Movement CSV</button></div>
+  <p class="note">Purchase adds stock, Sale reduces stock, and Adjustment sets current stock to the entered quantity. These movements update inventory only; they do not automatically create customer invoices or supplier purchase orders.</p>
+  <hr style="border:0;border-top:1px solid var(--line);margin:20px 0">
+  <h2>Product Catalogue</h2><input class="search" id="productSearch" placeholder="Search name, code, category or barcode..." oninput="renderProducts()">
+  <div class="table-wrap"><table><thead><tr><th>Code / Barcode</th><th>Product</th><th>Category</th><th>Unit</th><th>Cost</th><th>Sell Price</th><th>Stock</th><th>VAT</th><th>Status</th><th>Actions</th></tr></thead><tbody id="productRows"></tbody></table></div>
+  <hr style="border:0;border-top:1px solid var(--line);margin:20px 0">
+  <h2>Recent Stock Movements</h2><div class="table-wrap"><table><thead><tr><th>Date</th><th>Product</th><th>Type</th><th>Qty</th><th>Reference</th><th>Notes</th></tr></thead><tbody id="movementRows"></tbody></table></div>
+ </section>
+
+ <section id="recordsPanel" class="panel hidden">
+  <h1>Saved Records</h1><p class="sub">Invoices saved in this browser on this device.</p>
+  <input class="search" id="invoiceSearch" placeholder="Search invoice or customer..." oninput="renderInvoices()">
+  <div class="table-wrap"><table><thead><tr><th>Invoice No.</th><th>Date</th><th>Customer</th><th>Total</th><th>Actions</th></tr></thead><tbody id="invoiceRows"></tbody></table></div>
+  <div class="actions"><button onclick="downloadInvoices()">Download Invoices CSV</button><button onclick="exportBackup()">Download Full Backup (JSON)</button><label class="btn" for="importFile">Import Backup</label><input id="importFile" type="file" accept="application/json" style="display:none" onchange="importBackup(event)"></div>
+ </section>
+</main>
+<footer>Shamal ERP · Login protected by Supabase. Business records are still stored locally in this browser; export backups regularly.</footer>
+</div>
+<script>
+const $=id=>document.getElementById(id);
+const read=(key)=>JSON.parse(localStorage.getItem(key)||'[]');
+const write=(key,val)=>localStorage.setItem(key,JSON.stringify(val));
+let customers=read('shamal_customers'), invoices=read('shamal_invoices');
+function showTab(tab){
+ ['customers','invoice','inventory','records'].forEach(t=>{$(t+'Panel').classList.toggle('hidden',t!==tab);$('tab-'+t).classList.toggle('active',t===tab)});
+ if(tab==='invoice')refreshCustomerSelect(); if(tab==='records')renderInvoices(); if(tab==='inventory'){renderProducts();refreshMovementSelect();renderMovements();}
+}
+function nextCode(){return 'CUS-'+String(customers.length+1).padStart(4,'0')}
+function resetCustomer(){ $('customerId').value='';$('accountCode').value=nextCode();['custName','custPhone','custEmail','custVat','custCity','custPostal','custAddress','custNotes'].forEach(x=>$(x).value='');$('custCountry').value='Saudi Arabia';$('custCredit').value='0';$('custTerms').value='Cash';$('custRate').value='A'}
+function saveCustomer(){
+ const name=$('custName').value.trim();if(!name){alert('Please enter customer name.');return}
+ const obj={id:$('customerId').value||String(Date.now()),code:$('accountCode').value||nextCode(),name,phone:$('custPhone').value,email:$('custEmail').value,vat:$('custVat').value,city:$('custCity').value,country:$('custCountry').value,postal:$('custPostal').value,credit:$('custCredit').value,address:$('custAddress').value,terms:$('custTerms').value,rate:$('custRate').value,notes:$('custNotes').value};
+ const i=customers.findIndex(c=>c.id===obj.id);if(i>=0)customers[i]=obj;else customers.push(obj);write('shamal_customers',customers);renderCustomers();resetCustomer();alert('Customer saved.');
+}
+function editCustomer(id){const c=customers.find(x=>x.id===id);if(!c)return;$('customerId').value=c.id;$('accountCode').value=c.code;$('custName').value=c.name;$('custPhone').value=c.phone;$('custEmail').value=c.email;$('custVat').value=c.vat;$('custCity').value=c.city;$('custCountry').value=c.country;$('custPostal').value=c.postal;$('custCredit').value=c.credit;$('custAddress').value=c.address;$('custTerms').value=c.terms;$('custRate').value=c.rate;$('custNotes').value=c.notes||'';window.scrollTo({top:0,behavior:'smooth'})}
+function deleteCustomer(id){if(confirm('Delete this customer?')){customers=customers.filter(c=>c.id!==id);write('shamal_customers',customers);renderCustomers()}}
+function renderCustomers(){const q=$('customerSearch').value.toLowerCase();$('customerRows').innerHTML=customers.filter(c=>(c.name+c.code+c.phone+c.city).toLowerCase().includes(q)).map(c=>`<tr><td>${esc(c.code)}</td><td>${esc(c.name)}</td><td>${esc(c.phone)}</td><td>${esc(c.city)}</td><td>${esc(c.vat)}</td><td><button onclick="editCustomer('${c.id}')">Edit</button> <button class="danger" onclick="deleteCustomer('${c.id}')">Delete</button></td></tr>`).join('')||'<tr><td colspan="6">No customers yet.</td></tr>'}
+function refreshCustomerSelect(){const s=$('invoiceCustomer'),v=s.value;s.innerHTML='<option value="">Select customer</option>'+customers.map(c=>`<option value="${c.id}">${esc(c.name)} — ${esc(c.code)}</option>`).join('');s.value=v}
+function fillBuyer(){const c=customers.find(x=>x.id===$('invoiceCustomer').value);if(c){$('buyerVat').value=c.vat||'';$('buyerAddress').value=[c.address,c.city,c.country].filter(Boolean).join(', ')}}
+function addItem(desc='',unit='PC',price='',qty=1){const tr=document.createElement('tr');tr.innerHTML=`<td class="rownum"></td><td><input class="desc" placeholder="Item description" value="${esc(desc)}"></td><td><input class="unit" value="${esc(unit)}"></td><td><input class="price" type="number" min="0" step=".01" value="${price}" oninput="calculate()"></td><td><input class="qty" type="number" min="0" step=".01" value="${qty}" oninput="calculate()"></td><td class="amount">0.00</td><td class="no-print"><button class="danger" onclick="this.closest('tr').remove();calculate()">×</button></td>`;$('itemRows').appendChild(tr);tr.querySelector('.desc').addEventListener('input',calculate);calculate()}
+function getItems(){return [...$('itemRows').querySelectorAll('tr')].map(tr=>({description:tr.querySelector('.desc').value,unit:tr.querySelector('.unit').value,price:+tr.querySelector('.price').value||0,qty:+tr.querySelector('.qty').value||0}))}
+function calculate(){let sub=0;[...$('itemRows').querySelectorAll('tr')].forEach((tr,i)=>{const amount=(+tr.querySelector('.price').value||0)*(+tr.querySelector('.qty').value||0);sub+=amount;tr.querySelector('.amount').textContent=amount.toFixed(2);tr.querySelector('.rownum').textContent=i+1});const vat=sub*.15;$('subtotal').textContent=sub.toFixed(2)+' SAR';$('vatAmount').textContent=vat.toFixed(2)+' SAR';$('grandTotal').textContent=(sub+vat).toFixed(2)+' SAR';return {sub,vat,total:sub+vat}}
+function newInvoice(){ $('invoiceNo').value='INV-'+String(invoices.length+1).padStart(4,'0');const d=new Date().toISOString().slice(0,10);$('invoiceDate').value=d;$('supplyDate').value=d;$('invoiceCustomer').value='';$('buyerVat').value='';$('buyerAddress').value='';$('invoiceNotes').value='';$('itemRows').innerHTML='';addItem()}
+function saveInvoice(){const customer=customers.find(c=>c.id===$('invoiceCustomer').value);if(!customer){alert('Please select a customer.');return}const sums=calculate();const inv={id:$('invoiceNo').value+'-'+Date.now(),no:$('invoiceNo').value,date:$('invoiceDate').value,supply:$('supplyDate').value,customerId:customer.id,customer:customer.name,buyerVat:$('buyerVat').value,buyerAddress:$('buyerAddress').value,seller:$('businessName').value,sellerVat:$('sellerVat').value,sellerPhone:$('sellerPhone').value,items:getItems(),subtotal:sums.sub,vat:sums.vat,total:sums.total,notes:$('invoiceNotes').value};const old=invoices.findIndex(x=>x.no===inv.no);if(old>=0){if(!confirm('This invoice number exists. Replace it?'))return;invoices[old]=inv}else invoices.push(inv);write('shamal_invoices',invoices);alert('Invoice saved successfully.')}
+function renderInvoices(){const q=$('invoiceSearch').value.toLowerCase();$('invoiceRows').innerHTML=invoices.filter(i=>(i.no+i.customer+i.date).toLowerCase().includes(q)).map(i=>`<tr><td>${esc(i.no)}</td><td>${esc(i.date)}</td><td>${esc(i.customer)}</td><td>${i.total.toFixed(2)} SAR</td><td><button onclick="loadInvoice('${i.id}')">Open</button> <button class="danger" onclick="removeInvoice('${i.id}')">Delete</button></td></tr>`).join('')||'<tr><td colspan="5">No invoices saved yet.</td></tr>'}
+function loadInvoice(id){const i=invoices.find(x=>x.id===id);if(!i)return;showTab('invoice');$('invoiceNo').value=i.no;$('invoiceDate').value=i.date;$('supplyDate').value=i.supply;$('businessName').value=i.seller;$('sellerName').childNodes[0].textContent=i.seller;$('sellerVat').value=i.sellerVat;$('sellerPhone').value=i.sellerPhone;refreshCustomerSelect();$('invoiceCustomer').value=i.customerId;$('buyerVat').value=i.buyerVat;$('buyerAddress').value=i.buyerAddress;$('invoiceNotes').value=i.notes;$('itemRows').innerHTML='';i.items.forEach(x=>addItem(x.description,x.unit,x.price,x.qty));}
+function removeInvoice(id){if(confirm('Delete this invoice?')){invoices=invoices.filter(x=>x.id!==id);write('shamal_invoices',invoices);renderInvoices()}}
+function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function csvDownload(filename,rows){const csv=rows.map(r=>r.map(v=>'"'+String(v??'').replace(/"/g,'""')+'"').join(',')).join('\r\n');const a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8'}));a.download=filename;a.click();URL.revokeObjectURL(a.href)}
+function downloadCustomers(){csvDownload('customers.csv',[['Account Code','Name','Phone','Email','VAT','City','Country','Address','Credit Limit','Terms','Customer Notes'],...customers.map(c=>[c.code,c.name,c.phone,c.email,c.vat,c.city,c.country,c.address,c.credit,c.terms,c.notes])])}
+function downloadInvoices(){csvDownload('invoices.csv',[['Invoice','Date','Customer','Subtotal','VAT','Total'],...invoices.map(i=>[i.no,i.date,i.customer,i.subtotal,i.vat,i.total])])}
+function exportBackup(){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify({customers,invoices,products,movements},null,2)],{type:'application/json'}));a.download='shamal-erp-backup.json';a.click();URL.revokeObjectURL(a.href)}
+function importBackup(e){const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{try{const x=JSON.parse(r.result);customers=x.customers||[];invoices=x.invoices||[];products=x.products||[];movements=x.movements||[];write('shamal_customers',customers);write('shamal_invoices',invoices);write('shamal_products',products);write('shamal_movements',movements);renderCustomers();renderInvoices();renderProducts();refreshMovementSelect();renderMovements();alert('Backup imported.')}catch{alert('Invalid backup file.')}};r.readAsText(f)}
+function downloadInvoiceHTML(){const content=$('invoicePanel').cloneNode(true);content.querySelectorAll('.no-print').forEach(e=>e.remove());content.querySelectorAll('input,select,textarea').forEach(el=>{const span=document.createElement('span');span.textContent=el.value;el.replaceWith(span)});const doc=`<!doctype html><html><head><meta charset="utf-8"><title>${esc($('invoiceNo').value)}</title><style>body{font:14px Arial;padding:30px;color:#111}table{width:100%;border-collapse:collapse;margin-top:20px}td,th{border:1px solid #aaa;padding:8px;text-align:left}.totals{margin:20px 0 0 auto;width:320px}.totalrow{display:flex;justify-content:space-between;padding:8px;border-bottom:1px solid #ccc}.company{font-size:22px;font-weight:bold}.invoice-top{display:flex;justify-content:space-between}.invoice-meta{display:grid;grid-template-columns:1fr 1fr;gap:8px}.invoice-meta div{border:1px solid #ccc;padding:8px}.invoice-meta b{display:block;font-size:11px}</style></head><body>${content.innerHTML}
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+// STEP 1: Replace these two placeholders with your Supabase project details.
+// Supabase Dashboard -> Project Settings -> API -> Project URL and anon/public key.
+// NEVER put a service_role key in this HTML file.
+const SHAMAL_SUPABASE_URL = "https://xslonymimxnzumxyvwvg.supabase.co";
+const SHAMAL_SUPABASE_ANON_KEY = "sb_publishable_SQvR-o3LyEqqJq3_hbqXvw_lX05xcYA";
+let shamalSupabase = null;
+let shamalCurrentUser = null;
+
+function authMessage(message, isError=true){
+ const el=document.getElementById('authMessage');
+ if(el){el.textContent=message;el.style.color=isError?'#b42318':'#15966b';}
+}
+function authConfigured(){
+ return SHAMAL_SUPABASE_URL.startsWith('https://') &&
+        !SHAMAL_SUPABASE_URL.includes('PASTE_') &&
+        !SHAMAL_SUPABASE_ANON_KEY.includes('PASTE_') &&
+        SHAMAL_SUPABASE_ANON_KEY.length>20;
+}
+async function shamalProfile(user){
+ // Profile row is created automatically by the SQL trigger in the setup instructions.
+ const {data,error}=await shamalSupabase.from('profiles')
+   .select('email, role, active').eq('id',user.id).maybeSingle();
+ if(error) throw error;
+ if(!data || data.active===false) throw new Error('Your account is not activated. Contact the administrator.');
+ return data;
+}
+async function shamalShowApp(user){
+ const profile=await shamalProfile(user);
+ shamalCurrentUser=user;
+ document.getElementById('loginScreen').style.display='none';
+ document.getElementById('appShell').style.display='block';
+ document.getElementById('signedInAs').textContent=(profile.email||user.email)+' · '+(profile.role||'employee');
+ authMessage('',false);
+}
+async function shamalSignIn(){
+ if(!authConfigured()){authMessage('Setup required: add your Supabase Project URL and anon public key in the HTML file.');return;}
+ const email=document.getElementById('loginEmail').value.trim();
+ const password=document.getElementById('loginPassword').value;
+ if(!email||!password){authMessage('Enter your email and password.');return;}
+ const button=document.getElementById('loginButton');button.disabled=true;button.textContent='Signing in...';
+ try{
+  const {data,error}=await shamalSupabase.auth.signInWithPassword({email,password});
+  if(error) throw error;
+  await shamalShowApp(data.user);
+ }catch(e){authMessage(e.message||'Sign in failed.');}
+ finally{button.disabled=false;button.textContent='Sign In';}
+}
+async function shamalResetPassword(){
+ if(!authConfigured()){authMessage('Configure Supabase first.');return;}
+ const email=document.getElementById('loginEmail').value.trim();
+ if(!email){authMessage('Enter your email address first.');return;}
+ const {error}=await shamalSupabase.auth.resetPasswordForEmail(email);
+ if(error) authMessage(error.message); else authMessage('Password reset email sent. Check your inbox.',false);
+}
+async function shamalSignOut(){
+ if(shamalSupabase) await shamalSupabase.auth.signOut();
+ shamalCurrentUser=null;document.getElementById('appShell').style.display='none';
+ document.getElementById('loginScreen').style.display='flex';
+ document.getElementById('loginPassword').value='';
+ authMessage('You have signed out.',false);
+}
+async function shamalInitAuth(){
+ if(!authConfigured()){
+  authMessage('Supabase is not configured yet. Add your Project URL and anon public key to activate login.');
+  return;
+ }
+ shamalSupabase=window.supabase.createClient(SHAMAL_SUPABASE_URL,SHAMAL_SUPABASE_ANON_KEY);
+ const {data:{session}}=await shamalSupabase.auth.getSession();
+ if(session){
+  try{await shamalShowApp(session.user);}
+  catch(e){await shamalSupabase.auth.signOut();authMessage(e.message||'Account access denied.');}
+ }
+ shamalSupabase.auth.onAuthStateChange(async(event,session)=>{
+  if(event==='SIGNED_OUT'){
+   shamalCurrentUser=null;document.getElementById('appShell').style.display='none';
+   document.getElementById('loginScreen').style.display='flex';
+  } else if(event==='SIGNED_IN' && session && !shamalCurrentUser){
+   try{await shamalShowApp(session.user);}
+   catch(e){await shamalSupabase.auth.signOut();authMessage(e.message||'Account access denied.');}
+  }
+ });
+}
+document.addEventListener('DOMContentLoaded',shamalInitAuth);
+</script>
+
+</body></html>`;const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([doc],{type:'text/html'}));a.download=($('invoiceNo').value||'invoice')+'.html';a.click();URL.revokeObjectURL(a.href)}
+
+let products=read('shamal_products'), movements=read('shamal_movements');
+function nextProductCode(){return 'PR-'+String(products.length+1).padStart(4,'0')}
+function resetProduct(){
+ $('productId').value='';$('productFormTitle').textContent='Add Product';$('productCode').value=nextProductCode();
+ ['productName','productSupplier','productBarcode','productNotes'].forEach(id=>$(id).value='');
+ $('productCategory').value='Wallpaper & Wall Covering';$('productUnit').value='PC';
+ $('productCost').value='0';$('productPrice').value='0';$('productStock').value='0';$('productMinStock').value='5';$('productVat').value='15';
+}
+function saveProduct(){
+ const name=$('productName').value.trim(),code=$('productCode').value.trim();
+ if(!name||!code){alert('Please enter product code and product name.');return}
+ if(products.some(p=>p.code.toLowerCase()===code.toLowerCase()&&p.id!==$('productId').value)){alert('This product code already exists.');return}
+ const existing=products.find(p=>p.id===$('productId').value);
+ const obj={id:existing?.id||String(Date.now()),code,name,category:$('productCategory').value,unit:$('productUnit').value,cost:+$('productCost').value||0,price:+$('productPrice').value||0,stock:existing?existing.stock:(+$('productStock').value||0),minStock:+$('productMinStock').value||0,vat:+$('productVat').value,supplier:$('productSupplier').value,barcode:$('productBarcode').value,notes:$('productNotes').value};
+ if(existing)products=products.map(p=>p.id===obj.id?obj:p);else products.push(obj);
+ write('shamal_products',products);
+ if(!existing&&obj.stock>0)movements.unshift({date:new Date().toISOString().slice(0,10),productId:obj.id,product:obj.name,type:'Opening stock',qty:obj.stock,ref:'Opening stock',notes:'Initial stock on product creation'});
+ write('shamal_movements',movements);renderProducts();refreshMovementSelect();renderMovements();resetProduct();alert('Product saved.');
+}
+function editProduct(id){
+ const p=products.find(x=>x.id===id);if(!p)return;
+ $('productId').value=p.id;$('productFormTitle').textContent='Edit Product';
+ $('productCode').value=p.code;$('productName').value=p.name;$('productCategory').value=p.category;$('productUnit').value=p.unit;
+ $('productCost').value=p.cost;$('productPrice').value=p.price;$('productStock').value=p.stock;$('productMinStock').value=p.minStock;
+ $('productVat').value=String(p.vat);$('productSupplier').value=p.supplier;$('productBarcode').value=p.barcode;$('productNotes').value=p.notes;
+ window.scrollTo({top:0,behavior:'smooth'});
+}
+function deleteProduct(id){if(!confirm('Delete this product? Its stock movement history will remain.'))return;products=products.filter(p=>p.id!==id);write('shamal_products',products);renderProducts();refreshMovementSelect()}
+function renderProducts(){
+ const q=($('productSearch')?.value||'').toLowerCase();
+ const filtered=products.filter(p=>(p.code+p.name+p.category+p.barcode).toLowerCase().includes(q));
+ $('productRows').innerHTML=filtered.map(p=>{
+  const status=p.stock<=0?'Out of stock':p.stock<=p.minStock?'Low stock':'In stock';
+  return `<tr><td>${esc(p.code)}<br><small>${esc(p.barcode)}</small></td><td>${esc(p.name)}<br><small>${esc(p.supplier)}</small></td><td>${esc(p.category)}</td><td>${esc(p.unit)}</td><td>${p.cost.toFixed(2)}</td><td>${p.price.toFixed(2)}</td><td><b>${p.stock}</b></td><td>${p.vat}%</td><td>${status}</td><td><button onclick="editProduct('${p.id}')">Edit</button> <button class="danger" onclick="deleteProduct('${p.id}')">Delete</button></td></tr>`
+ }).join('')||'<tr><td colspan="10">No products added yet.</td></tr>';
+ $('invTotalProducts').value=products.length;$('invUnitsStock').value=products.reduce((s,p)=>s+(+p.stock||0),0);$('invLowStock').value=products.filter(p=>p.stock<=p.minStock).length;
+}
+function refreshMovementSelect(){const s=$('movementProduct');if(!s)return;const v=s.value;s.innerHTML='<option value="">Select product</option>'+products.map(p=>`<option value="${p.id}">${esc(p.code)} — ${esc(p.name)} (Stock: ${p.stock})</option>`).join('');if(products.some(p=>p.id===v))s.value=v}
+function recordMovement(){
+ const p=products.find(x=>x.id===$('movementProduct').value),type=$('movementType').value,qty=+$('movementQty').value;
+ if(!p){alert('Please select a product.');return}if(!(qty>0)){alert('Enter a quantity greater than zero.');return}
+ if(type==='sale'&&qty>p.stock){alert('Insufficient stock. Current stock: '+p.stock);return}
+ if(type==='purchase')p.stock+=qty;else if(type==='sale')p.stock-=qty;else p.stock=qty;
+ const names={purchase:'Purchase / Stock In',sale:'Sale / Stock Out',adjustment:'Stock Adjustment'};
+ movements.unshift({date:$('movementDate').value||new Date().toISOString().slice(0,10),productId:p.id,product:p.name,type:names[type],qty,ref:$('movementRef').value,notes:$('movementNotes').value});
+ write('shamal_products',products);write('shamal_movements',movements);$('movementQty').value='1';$('movementRef').value='';$('movementNotes').value='';
+ renderProducts();refreshMovementSelect();renderMovements();alert('Stock movement saved. New stock: '+p.stock);
+}
+function renderMovements(){$('movementRows').innerHTML=movements.slice(0,100).map(m=>`<tr><td>${esc(m.date)}</td><td>${esc(m.product)}</td><td>${esc(m.type)}</td><td>${m.qty}</td><td>${esc(m.ref)}</td><td>${esc(m.notes)}</td></tr>`).join('')||'<tr><td colspan="6">No stock movements yet.</td></tr>'}
+function downloadProducts(){csvDownload('products-inventory.csv',[['Product Code','Product Name','Category','Unit','Purchase Price SAR','Selling Price SAR Ex VAT','Stock Qty','Minimum Stock','VAT %','Supplier','Barcode','Notes'],...products.map(p=>[p.code,p.name,p.category,p.unit,p.cost,p.price,p.stock,p.minStock,p.vat,p.supplier,p.barcode,p.notes])])}
+function downloadMovements(){csvDownload('stock-movements.csv',[['Date','Product','Movement Type','Quantity','Reference','Notes'],...movements.map(m=>[m.date,m.product,m.type,m.qty,m.ref,m.notes])])}
+
+resetCustomer();renderCustomers();resetProduct();renderProducts();$('movementDate').value=new Date().toISOString().slice(0,10);refreshMovementSelect();renderMovements();newInvoice();
+</script>
+</body></html>
