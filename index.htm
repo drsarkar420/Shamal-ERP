@@ -300,7 +300,7 @@ async function shamalInitAuth(){
   authMessage('Supabase is not configured yet. Add your Project URL and anon public key to activate login.');
   return;
  }
- shamalSupabase=window.supabase.createClient(SHAMAL_SUPABASE_URL,SHAMAL_SUPABASE_ANON_KEY);
+ shamalSupabase=window.supabase.createClient(https://xslonymimxnzumxyvwvg.supabase.co,sb_publishable_SQvR-o3LyEqqJq3_hbqXvw_lX05xcYA);
  const {data:{session}}=await shamalSupabase.auth.getSession();
  if(session){
   try{await shamalShowApp(session.user);}
